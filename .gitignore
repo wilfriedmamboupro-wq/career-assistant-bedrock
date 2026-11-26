@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.env
+.env.*
+node_modules/
+dist/
+cdk.out/
+.DS_Store
+
+# deployment outputs (live URLs) and local eval results
+infra/cdk-outputs.json
+backend/eval/results.json
+*.egg-info/
