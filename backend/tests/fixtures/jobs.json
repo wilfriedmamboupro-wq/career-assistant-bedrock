@@ -1,0 +1,9 @@
+[
+  {"id": "T-001", "title": "Développeur·se Python (fictif)", "city": "Montréal", "language": "fr",
+   "url": "https://example.com/jobs/T-001", "summary": "Poste FICTIF pour les tests. API, données."},
+  {"id": "T-002", "title": "Data Scientist (fictitious)", "city": "Toronto", "language": "en",
+   "url": "https://example.com/jobs/T-002", "summary": "FICTITIOUS test posting. Machine learning."},
+  {"id": "T-003", "title": "Analyste de données / Data Analyst (fictif)", "city": "Québec",
+   "language": "bilingual", "url": "https://example.com/jobs/T-003",
+   "summary": "Poste FICTIF bilingue pour les tests. SQL, tableaux de bord."}
+]
