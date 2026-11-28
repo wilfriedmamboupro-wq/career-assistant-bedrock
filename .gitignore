@@ -14,3 +14,4 @@ cdk.out/
 infra/cdk-outputs.json
 backend/eval/results.json
 *.egg-info/
+.claude/

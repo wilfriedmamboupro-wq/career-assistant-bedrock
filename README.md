@@ -173,6 +173,12 @@ conversation, ~2 500 jetons d'entrée et ~250 de sortie par message.
    trompeuse → réponse explicite (« je n'ai pas accès à vos renseignements personnels ») et renvoi
    vers un recruteur. Nova suit mieux une consigne placée dans le tour courant que dans le prompt
    système.
+7. **Recherche d'offres sans cartes** après quelques échanges (constaté pendant une répétition de
+   la démo) : Nova recopiait des titres de postes vus dans les sources au lieu d'appeler l'outil →
+   appel d'outil forcé (`toolChoice: any`) au premier tour des questions sur les offres, pour Nova
+   uniquement (Claude 5.5 refuse l'appel forcé) : 10/10 ensuite.
+8. **Réponse vide** (seulement du « raisonnement » entre balises) → phrase de repli garantie : une
+   bulle vide aurait aussi corrompu l'historique de la session.
 
 ## IA responsable
 
