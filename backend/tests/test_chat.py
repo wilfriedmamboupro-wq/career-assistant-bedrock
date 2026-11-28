@@ -146,3 +146,39 @@ def test_language_detection_on_short_questions():
     assert detect_language("Faut-il être bilingue ?") == "fr"
     assert detect_language("Is there an annual bonus?") == "en"
     assert detect_language("Any AI jobs in Toronto?") == "en"
+
+
+def test_job_questions_get_an_explicit_tool_instruction(make_assistant, client_for):
+    llm = ScriptedLLM(text_reply("ok"), text_reply("ok"))
+    client = client_for(make_assistant(llm))
+    post(client, "Are there any AI jobs in Toronto?")
+    post(client, "Est-ce que le télétravail est possible ?")
+    assert "call the search_jobs tool first" in last_user_text(llm.calls[0])
+    assert "search_jobs" not in last_user_text(llm.calls[1])
+
+
+def test_job_question_forces_tool_on_first_round_for_nova(make_assistant, client_for):
+    llm = ScriptedLLM(tool_reply(title="python"), text_reply("Un poste."))
+    post(client_for(make_assistant(llm)), "Des postes Python ?")
+    assert llm.calls[0]["toolConfig"]["toolChoice"] == {"any": {}}
+    assert "toolChoice" not in llm.calls[1]["toolConfig"]  # model can answer afterwards
+
+
+def test_no_forced_tool_for_claude(settings, make_assistant, client_for):
+    settings.model_id = "ca.anthropic.claude-haiku-5-5"
+    llm = ScriptedLLM(text_reply("ok"))
+    post(client_for(make_assistant(llm)), "Des postes Python ?")
+    assert "toolChoice" not in llm.calls[0]["toolConfig"]
+
+
+def test_empty_answer_never_reaches_the_user(make_assistant, client_for):
+    llm = ScriptedLLM(
+        tool_reply(title="python"),
+        text_reply("<thinking>only scaffolding</thinking>"),
+        text_reply("<thinking>nothing</thinking>"),
+    )
+    client = client_for(make_assistant(llm))
+    with_jobs = post(client, "Des postes Python ?").json()
+    assert with_jobs["answer"] == "Voici les offres correspondantes." and with_jobs["jobs"]
+    without = post(client, "How many remote days per week?").json()
+    assert without["answer"] == "I don't know based on the public information available."

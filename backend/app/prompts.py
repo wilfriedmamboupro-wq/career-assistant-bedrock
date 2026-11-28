@@ -54,13 +54,32 @@ def build_user_turn(question: str, passages) -> str:
             "I don't have access to your personal information and I don't keep it. For anything "
             'about your own file, use the "Talk to a recruiter" button below the chat.'
         )
+    job_hint = (
+        "- This question is about open positions: call the search_jobs tool first, even if the "
+        "sources or earlier messages mention job titles, then summarise its results.\n"
+        if is_job_search(question)
+        else ""
+    )
     return (
         f"<sources>\n{blocks}\n</sources>\n\n<question>\n{question}\n</question>\n\n"
         f"{reply}, as plain text without any XML tags.\n"
+        f"{job_hint}"
         f"- If the question is about the user's own personal information (their phone number, "
         f'email, address or application), reply: "{personal}"\n'
         f'- Otherwise, if the sources do not answer the question, reply: "{unknown}"'
     )
+
+
+_JOB_SEARCH = re.compile(
+    # not "role" ("salary for the developer role") nor "vacances" (holidays)
+    r"\b(jobs?|positions?|openings?|postes?|offres?|emplois?)\b",
+    re.IGNORECASE,
+)
+
+
+def is_job_search(question: str) -> bool:
+    """Questions about open positions must go through the search_jobs tool (job cards)."""
+    return bool(_JOB_SEARCH.search(question))
 
 
 _FR_HINTS = set(

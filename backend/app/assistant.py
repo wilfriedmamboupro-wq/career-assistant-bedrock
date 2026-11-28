@@ -15,7 +15,7 @@ from app.config import Settings
 from app.guardrails import Guard
 from app.jobs import SEARCH_JOBS_TOOL, JobIndex
 from app.metrics import emit
-from app.prompts import SYSTEM_PROMPT, build_user_turn
+from app.prompts import SYSTEM_PROMPT, build_user_turn, detect_language, is_job_search
 from app.retrieval import Retriever
 from app.schemas import ChatResponse, GuardrailInfo, Job, Source
 from app.store import Store
@@ -39,6 +39,17 @@ UNAVAILABLE_ANSWER = (
     "Le service est momentanément indisponible, réessayez dans un instant. / The service "
     "is temporarily unavailable, please try again shortly."
 )
+# Used when the model returns nothing visible (e.g. only <thinking>): never show an empty bubble
+FALLBACK = {
+    "fr": {
+        "jobs": "Voici les offres correspondantes.",
+        "none": "Je ne sais pas d'après les informations publiques disponibles.",
+    },
+    "en": {
+        "jobs": "Here are the matching job openings.",
+        "none": "I don't know based on the public information available.",
+    },
+}
 
 # Small models sometimes leak scaffolding into the visible answer: drop whole blocks,
 # unwrap <answer>, and remove any leftover tag.
@@ -88,7 +99,13 @@ class Assistant:
         history = self.store.get_history(session_id)
         messages = [*history, _msg("user", build_user_turn(question, passages))]
 
-        answer, jobs, usage = self._run(messages)
+        # Nova sometimes answers job questions from the sources instead of calling the tool
+        # (no job cards). Force a tool call on the first round. Not for Claude: recent
+        # Claude models reject a forced tool_choice.
+        force_tool = is_job_search(question) and "nova" in self.s.model_id
+        answer, jobs, usage = self._run(messages, force_tool=force_tool)
+        if not answer:
+            answer = FALLBACK[detect_language(question)]["jobs" if jobs else "none"]
 
         out = self.guard.check(answer, "OUTPUT")
         if out.blocked:
@@ -121,17 +138,22 @@ class Assistant:
             guardrail=info,
         )
 
-    def _run(self, messages: list[dict]) -> tuple[str, list[Job], tuple[int, int]]:
+    def _run(
+        self, messages: list[dict], force_tool: bool = False
+    ) -> tuple[str, list[Job], tuple[int, int]]:
         """Manual tool loop: few rounds, one local tool."""
         found: list[Job] = []
         tokens_in = tokens_out = 0
-        for _ in range(MAX_TOOL_ROUNDS):
+        for round_no in range(MAX_TOOL_ROUNDS):
+            tool_config: dict = {"tools": [SEARCH_JOBS_TOOL]}
+            if force_tool and round_no == 0:
+                tool_config["toolChoice"] = {"any": {}}
             try:
                 resp = self.llm.converse(
                     modelId=self.s.model_id,
                     system=[{"text": SYSTEM_PROMPT}],
                     messages=messages,
-                    toolConfig={"tools": [SEARCH_JOBS_TOOL]},
+                    toolConfig=tool_config,
                     inferenceConfig={"maxTokens": self.s.max_tokens},
                 )
             except ClientError as exc:
