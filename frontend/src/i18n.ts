@@ -4,6 +4,7 @@ export const strings = {
   fr: {
     open: 'Ouvrir l’assistant carrière',
     close: 'Fermer',
+    reset: 'Nouvelle conversation',
     title: 'Career Assistant',
     badge: 'Prototype personnel — non affilié à l’entreprise',
     welcome:
@@ -32,6 +33,7 @@ export const strings = {
   en: {
     open: 'Open the career assistant',
     close: 'Close',
+    reset: 'New conversation',
     title: 'Career Assistant',
     badge: 'Personal prototype — not affiliated with the company',
     welcome:

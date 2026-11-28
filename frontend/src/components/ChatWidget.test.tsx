@@ -113,6 +113,28 @@ describe('ChatWidget', () => {
     expect(screen.getByRole('button', { name: /Demande envoyée/ })).toBeDisabled()
   })
 
+  it('starts a new conversation: clears messages, session and recruiter state', async () => {
+    const fetch = mockFetch(
+      reply(),
+      { ticket_id: 'abc', message: 'Demande n° abc transmise' },
+      reply({ session_id: 's-2', answer: 'Nouvelle réponse.' }),
+    )
+    render(<ChatWidget defaultOpen />)
+    await ask('Un')
+    await screen.findByText(/Deux jours/)
+    await userEvent.click(screen.getByRole('button', { name: /Parler à un recruteur/ }))
+    await screen.findByText('Demande n° abc transmise')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nouvelle conversation' }))
+    expect(screen.queryByText(/Deux jours/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Parler à un recruteur/ })).toBeDisabled()
+    expect(sessionStorage.getItem('career-assistant-session')).toBeNull()
+
+    await ask('Deux')
+    await screen.findByText('Nouvelle réponse.')
+    expect(JSON.parse(fetch.mock.calls[2][1]!.body as string).session_id).toBeNull()
+  })
+
   it('switches the interface to English', async () => {
     render(<ChatWidget defaultOpen />)
     await userEvent.click(screen.getByRole('button', { name: 'Switch to English' }))

@@ -56,6 +56,15 @@ export function ChatWidget({ defaultOpen = false }: { defaultOpen?: boolean }) {
     }
   }
 
+  // New session: the server keeps the old one until its 7-day TTL, nothing is reused
+  function resetConversation() {
+    sessionStorage.removeItem(SESSION_KEY)
+    setSessionId(null)
+    setEntries([])
+    setEscalated(false)
+    setInput('')
+  }
+
   function onSubmit(ev: FormEvent) {
     ev.preventDefault()
     void ask(input)
@@ -77,6 +86,15 @@ export function ChatWidget({ defaultOpen = false }: { defaultOpen?: boolean }) {
           <p className="badge">{t.badge}</p>
         </div>
         <div className="header-actions">
+          <button
+            className="ghost"
+            onClick={resetConversation}
+            disabled={busy || entries.length === 0}
+            aria-label={t.reset}
+            title={t.reset}
+          >
+            ↺
+          </button>
           <button
             className="ghost"
             onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
